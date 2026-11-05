@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
+import '../firebase_options.dart';
 import '../models/task.dart';
+import '../services/auth_service.dart';
+import '../services/task_service.dart';
 import '../widgets/empty_state_view.dart';
+import '../widgets/planner_header.dart';
+import '../widgets/responsive_container.dart';
 import '../widgets/task_input_field.dart';
 import '../widgets/task_summary_card.dart';
 import '../widgets/task_tile.dart';
 
-/// TodoHomeScreen
+/// TodoHomeScreen (Personal Daily Planner)
 ///
-/// Main screen of the application built as a StatefulWidget (Requirement 10).
-/// It manages the state of tasks: adding, completing, deleting, and calculating
-/// the dynamic remaining task count.
+/// Responsive Daily Planner screen supporting:
+/// - Real-time Cloud Firestore synchronization across devices (laptop & mobile)
+/// - Firebase Authentication user isolation
+/// - Adding, completing (checkbox + strikethrough), swipe-to-delete with Undo
+/// - Dynamic remaining task counter & completion progress
+/// - Adaptive layout for mobile viewports and desktop browsers
 class TodoHomeScreen extends StatefulWidget {
   const TodoHomeScreen({super.key});
 
@@ -18,70 +26,44 @@ class TodoHomeScreen extends StatefulWidget {
 }
 
 class _TodoHomeScreenState extends State<TodoHomeScreen> {
-  /// In-memory list holding the task items
-  final List<Task> _tasks = [
-    Task(
-      id: '1',
-      title: 'Welcome to your To-Do App! 👋',
-      isCompleted: false,
-    ),
-    Task(
-      id: '2',
-      title: 'Tap the checkbox to mark as complete',
-      isCompleted: true,
-    ),
-    Task(
-      id: '3',
-      title: 'Swipe left or right on this task to delete it',
-      isCompleted: false,
-    ),
-  ];
+  final TaskService _taskService = TaskService();
+  final AuthService _authService = AuthService();
 
-  /// Dynamically computes the count of remaining incomplete tasks (Requirement 8)
-  int get remainingTasksCount =>
-      _tasks.where((task) => !task.isCompleted).length;
+  String get _currentUserId => _authService.currentUser?.uid ?? 'guest_user';
 
-  /// Adds a new task to the top of the list (Requirements 2, 3)
-  void _addNewTask(String title) {
+  /// Adds a new task to Cloud Firestore
+  Future<void> _addNewTask(String title) async {
     final newTask = Task(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
       isCompleted: false,
+      dueDate: DateTime.now(),
     );
 
-    setState(() {
-      _tasks.insert(0, newTask);
-    });
+    await _taskService.addTask(_currentUserId, newTask);
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Task added: "$title"'),
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
 
-  /// Toggles the completion status of a task (Requirements 5, 6)
-  void _toggleTaskCompletion(Task task) {
-    setState(() {
-      task.toggleCompleted();
-    });
+  /// Toggles task completion in Cloud Firestore
+  Future<void> _toggleTaskCompletion(Task task) async {
+    await _taskService.toggleTask(_currentUserId, task);
   }
 
-  /// Deletes a task and shows an Undo SnackBar (Requirement 7)
-  void _deleteTask(Task task) {
-    final originalIndex = _tasks.indexOf(task);
-    if (originalIndex == -1) return;
+  /// Deletes a task from Cloud Firestore and offers an Undo option
+  Future<void> _deleteTask(Task task, int originalIndex) async {
+    await _taskService.deleteTask(_currentUserId, task.id);
 
-    setState(() {
-      _tasks.removeAt(originalIndex);
-    });
-
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -89,149 +71,157 @@ class _TodoHomeScreenState extends State<TodoHomeScreen> {
         action: SnackBarAction(
           label: 'UNDO',
           textColor: Colors.amberAccent,
-          onPressed: () {
-            setState(() {
-              _tasks.insert(originalIndex, task);
-            });
+          onPressed: () async {
+            await _taskService.restoreTask(_currentUserId, task, originalIndex);
           },
         ),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 4),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
 
-  /// Shows an informational dialog about the project
-  void _showInfoDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.task_alt_rounded, color: Color(0xFF4F46E5)),
-            SizedBox(width: 10),
-            Text('InternCircle Project 03'),
-          ],
-        ),
-        content: const Text(
-          'To-Do List Application\n\n'
-          'Features:\n'
-          '• Add tasks with validation\n'
-          '• Mark complete with checkbox & strikethrough\n'
-          '• Swipe left/right using Dismissible to delete\n'
-          '• Dynamic remaining tasks tracker\n'
-          '• Responsive and modern Flutter UI',
-          style: TextStyle(height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Got it!'),
-          ),
-        ],
-      ),
-    );
+  /// Handles sign out
+  Future<void> _handleSignOut() async {
+    await _authService.signOut();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isConfigured = DefaultFirebaseOptions.isConfigured;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle_outline_rounded, size: 26),
-            SizedBox(width: 10),
-            Text(
-              'My Tasks',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline_rounded),
-            tooltip: 'About Project',
-            onPressed: _showInfoDialog,
-          ),
-        ],
-      ),
       body: SafeArea(
-        child: Padding(
+        child: ResponsiveContainer(
+          maxWidth: 768,
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Summary card displaying dynamic remaining tasks count (Requirement 8)
-              TaskSummaryCard(
-                totalTasks: _tasks.length,
-                remainingTasks: remainingTasksCount,
-              ),
-
-              const SizedBox(height: 16),
-
-              // Input field and Add button with empty input validation (Requirements 2, 3, 12)
-              TaskInputField(
-                onAddTask: _addNewTask,
-              ),
-
-              const SizedBox(height: 20),
-
-              // Tasks Section Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Tasks (${_tasks.length})',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                  if (_tasks.isNotEmpty)
-                    Text(
-                      'Swipe left/right to delete',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                ],
-              ),
+              // Planner Header: Greeting, Date, User Account, Sign Out
+              PlannerHeader(onSignOut: _handleSignOut),
 
               const SizedBox(height: 8),
 
-              // Display tasks using ListView.builder (Requirement 4)
-              // or Friendly Empty State when empty (Requirement 9)
-              Expanded(
-                child: _tasks.isEmpty
-                    ? const EmptyStateView()
-                    : ListView.builder(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.only(bottom: 24.0, top: 4.0),
-                        itemCount: _tasks.length,
-                        itemBuilder: (context, index) {
-                          final task = _tasks[index];
-                          return TaskTile(
-                            task: task,
-                            onToggle: () => _toggleTaskCompletion(task),
-                            onDismissed: () => _deleteTask(task),
-                            onDeleteTap: () => _deleteTask(task),
-                          );
-                        },
+              // Unconfigured Firebase Demo Banner (if credentials not yet set)
+              if (!isConfigured)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.cloud_off_rounded, color: Colors.amber.shade800, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Demo Mode: Local memory active. Add your Firebase keys in lib/firebase_options.dart for real-time cloud sync.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.amber.shade900,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+
+              // Real-time Cloud Firestore Tasks Stream
+              Expanded(
+                child: StreamBuilder<List<Task>>(
+                  stream: _taskService.getTasksStream(_currentUserId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          'Error loading tasks: ${snapshot.error}',
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                      );
+                    }
+
+                    final tasks = snapshot.data ?? [];
+                    final remainingTasksCount =
+                        tasks.where((task) => !task.isCompleted).length;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Dynamic Summary Card
+                        TaskSummaryCard(
+                          totalTasks: tasks.length,
+                          remainingTasks: remainingTasksCount,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Input field and Add button with validation
+                        TaskInputField(onAddTask: _addNewTask),
+
+                        const SizedBox(height: 20),
+
+                        // Section Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Today\'s Tasks (${tasks.length})',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade800,
+                              ),
+                            ),
+                            if (tasks.isNotEmpty)
+                              Text(
+                                'Swipe left/right to delete',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Tasks List or Empty State
+                        Expanded(
+                          child: tasks.isEmpty
+                              ? const EmptyStateView()
+                              : ListView.builder(
+                                  physics: const BouncingScrollPhysics(),
+                                  padding: const EdgeInsets.only(bottom: 24.0, top: 4.0),
+                                  itemCount: tasks.length,
+                                  itemBuilder: (context, index) {
+                                    final task = tasks[index];
+                                    return TaskTile(
+                                      task: task,
+                                      onToggle: () => _toggleTaskCompletion(task),
+                                      onDismissed: () => _deleteTask(task, index),
+                                      onDeleteTap: () => _deleteTask(task, index),
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ],
           ),

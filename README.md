@@ -1,46 +1,54 @@
-# 📝 InternCircle Project 03 – To-Do List App
+# 📅 Personal Daily Planner & To-Do App
 
-A clean, modern, and beginner-friendly To-Do List application built with **Flutter** and **Material 3**. This project was crafted for **InternCircle Project 03**, demonstrating fundamental Flutter concepts such as state management with `StatefulWidget`, dynamic UI rendering with `ListView.builder`, gesture handling with the `Dismissible` widget, dynamic counters, and input validation.
+A clean, modern, and cross-platform **Personal Daily Planner** built with **Flutter** and **Material 3**. Designed to run seamlessly across **laptop / desktop browsers and mobile devices**, featuring real-time **Cloud Firestore** synchronization, **Firebase Authentication**, responsive layout adaptation, and automated **GitHub Actions CI/CD** cloud deployment.
 
 ---
 
-## 📱 Features
+## ✨ Features & Architecture
 
-| # | Requirement | Implementation Details |
-|---|-------------|------------------------|
-| 1 | **Clean & Attractive UI** | Modern Material 3 styling with Indigo/Violet palette (`#4F46E5`), soft card elevations, and rounded corners. |
-| 2 | **Task Text Field** | Clean input field with icon and placeholder text for quick task entry. |
-| 3 | **Add Button** | Elevated "Add" button with an icon that inserts the task at the top of the list. Also supports pressing `Enter` on keyboard. |
-| 4 | **ListView.builder** | High-performance, lazily rendered task list using `ListView.builder` with bouncy physics. |
-| 5 | **Task Checkbox** | Interactive checkbox on each task card to toggle completion status. |
-| 6 | **Strikethrough Effect** | Completed tasks show `TextDecoration.lineThrough` and a dimmed text color for visual clarity. |
-| 7 | **Swipe-to-Delete (Dismissible)** | Swipe left or right on any task to delete it using the `Dismissible` widget, featuring an animated red background and an "Undo" SnackBar. |
-| 8 | **Dynamic Remaining Counter** | Real-time remaining tasks counter and visual progress bar dynamically computed via `tasks.where((t) => !t.isCompleted).length`. |
-| 9 | **Friendly Empty State** | When all tasks are cleared, displays an encouraging illustration and friendly message (`EmptyStateView`). |
-| 10 | **StatefulWidget & Data Model** | Pure Flutter state management using `StatefulWidget` and a dedicated `Task` data model class. |
-| 11 | **Pleasant Color Combination** | Indigo (`#4F46E5`), Slate backgrounds (`#F8FAFC`), crisp white cards, and amber warning alerts. |
-| 12 | **Input Validation** | Validates against empty or whitespace-only inputs, displaying a floating feedback SnackBar. |
-| 13 | **Beginner-Friendly Code** | Fully documented with explanatory comments throughout every file. |
+| Feature | Implementation Details |
+|---|---|
+| 🖥️ **Responsive Laptop & Mobile UI** | Uses `ResponsiveContainer` (centered, constrained `768px` max-width on desktop; adaptive full-width on mobile viewports). |
+| 🔐 **Firebase Authentication** | Secure Email/Password registration and sign-in, with a quick one-click **"Continue as Guest"** option. |
+| ☁️ **Cloud Firestore Real-Time Sync** | Automatically synchronizes tasks across all your devices using real-time streams (`.snapshots()`). |
+| 🔒 **Private, User-Scoped Storage** | Each user's tasks are stored securely under `/users/{userId}/tasks/{taskId}`. |
+| 🔄 **Offline Persistence** | Firestore caching ensures tasks remain saved after closing and reopening the app, even without an active internet connection. |
+| 📝 **Add Tasks with Validation** | Rounded text field with whitespace trim validation and Enter key submission. |
+| 🔘 **Task Checkbox & Strikethrough** | Checkbox toggles task completion status with smooth `TextDecoration.lineThrough` animation. |
+| 🗑️ **Swipe-to-Delete (Dismissible)** | Swipe left or right on any task to delete, with an animated red background and an interactive **Undo** action. |
+| 📊 **Dynamic Remaining Counter & Progress** | Real-time task counter, completion percentage badge, and visual progress bar. |
+| 👋 **Personal Daily Header** | Displays dynamic greeting ("Good morning / afternoon"), today's formatted date, user profile tag, and sign out dialog. |
+| 🚀 **GitHub Actions Cloud CI/CD** | Builds Flutter Web in the cloud on every `git push` to `main` and publishes automatically to **GitHub Pages**. |
 
 ---
 
 ## 📂 Project Structure
 
 ```
-todo_list_app/
+to_do_list_app/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml                 # GitHub Actions CI/CD for Flutter Web to GitHub Pages
 ├── lib/
-│   ├── main.dart                      # Application entry point & ThemeData configuration
+│   ├── main.dart                      # App entry point, Firebase init, Auth state stream
+│   ├── firebase_options.dart          # Firebase configuration template & safety check
 │   ├── models/
-│   │   └── task.dart                  # Task model (id, title, isCompleted, createdAt)
+│   │   └── task.dart                  # Enhanced Task model with Firestore toMap / fromMap
 │   ├── screens/
-│   │   └── todo_home_screen.dart      # Main StatefulWidget managing task list state & UI
+│   │   ├── auth_screen.dart           # Responsive Email/Password & Guest Auth Screen
+│   │   └── todo_home_screen.dart      # Real-time Daily Planner with Firestore StreamBuilder
+│   ├── services/
+│   │   ├── auth_service.dart          # FirebaseAuth wrapper with offline fallback
+│   │   └── task_service.dart          # Cloud Firestore CRUD & real-time streams
 │   └── widgets/
-│       ├── empty_state_view.dart      # Friendly message shown when no tasks exist
+│       ├── empty_state_view.dart      # Friendly message shown when list is empty
+│       ├── planner_header.dart        # Greeting, formatted date, user tag & sign out
+│       ├── responsive_container.dart  # Adaptive container for mobile and desktop screens
 │       ├── task_input_field.dart      # Text field, Add button & empty validation
 │       ├── task_summary_card.dart     # Dynamic remaining tasks counter & progress bar
 │       └── task_tile.dart             # Dismissible item tile with Checkbox & strikethrough
 ├── test/
-│   └── widget_test.dart               # Complete Flutter widget test suite
+│   └── widget_test.dart               # Complete Flutter test suite for Auth & Planner
 ├── web/                               # Web support files (index.html, manifest.json)
 ├── android/                           # Android Gradle configuration & manifest
 ├── pubspec.yaml                       # Flutter project dependencies & metadata
@@ -50,116 +58,80 @@ todo_list_app/
 
 ---
 
-## 🛠️ Key Flutter Concepts Demonstrated
+## 🚀 Cloud Web Deployment (No Local Flutter Required!)
 
-### 1. Simple Data Model (`lib/models/task.dart`)
-Each task has an `id`, `title`, `isCompleted` boolean flag, and `createdAt` timestamp:
-```dart
-class Task {
-  final String id;
-  String title;
-  bool isCompleted;
-  final DateTime createdAt;
+Because Flutter SDK is not installed on your local machine, a **GitHub Actions CI/CD pipeline** is pre-configured in `.github/workflows/deploy.yml`.
 
-  Task({required this.id, required this.title, this.isCompleted = false});
+### How it Works:
+1. Every time you push code to `main`, GitHub runs the workflow automatically on an Ubuntu cloud runner.
+2. It fetches dependencies, executes widget tests, and builds the Flutter Web application release.
+3. It deploys the compiled website directly to the `gh-pages` branch.
 
-  void toggleCompleted() {
-    isCompleted = !isCompleted;
-  }
-}
-```
-
-### 2. State Management with `StatefulWidget` & `setState`
-The `_TodoHomeScreenState` maintains the list of tasks. When tasks are added, toggled, or deleted, `setState()` triggers a re-render of the widget tree:
-```dart
-void _toggleTaskCompletion(Task task) {
-  setState(() {
-    task.toggleCompleted();
-  });
-}
-```
-
-### 3. Dynamic Calculation of Remaining Tasks
-Calculated cleanly using Dart's `Iterable.where`:
-```dart
-int get remainingTasksCount => _tasks.where((task) => !task.isCompleted).length;
-```
-
-### 4. Swipe to Delete with `Dismissible`
-Wraps each task card with horizontal swipe detection, custom red delete background, and provides an "Undo" action:
-```dart
-Dismissible(
-  key: ValueKey(task.id),
-  direction: DismissDirection.horizontal,
-  background: buildDismissBackground(alignment: Alignment.centerLeft),
-  secondaryBackground: buildDismissBackground(alignment: Alignment.centerRight),
-  onDismissed: (direction) => _deleteTask(task),
-  child: ...
-)
-```
-
-### 5. Input Validation
-Prevents empty or whitespace-only submissions:
-```dart
-if (enteredText.isEmpty) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('Please enter a task before adding!')),
-  );
-  return;
-}
-```
+### Enabling GitHub Pages in Your Repository:
+1. Go to your GitHub repository: [https://github.com/Hiranya-Shanmugavel/to_do_list_app](https://github.com/Hiranya-Shanmugavel/to_do_list_app).
+2. Click **Settings** > **Pages** (under Code and automation in the left sidebar).
+3. Under **Build and deployment** > **Source**, select **Deploy from a branch**.
+4. Under **Branch**, select `gh-pages` and folder `/ (root)`, then click **Save**.
+5. Your live Daily Planner will be available at:
+   👉 **`https://Hiranya-Shanmugavel.github.io/to_do_list_app/`**
 
 ---
 
-## 🚀 How to Run the App
+## 🔑 Firebase Setup Guide (Connecting Live Cloud Sync)
 
-### Prerequisites
-1. Install [Flutter SDK](https://docs.flutter.dev/get-started/install) (version 3.0.0 or higher).
-2. Set up an emulator (Android Studio) or use Google Chrome for web testing.
-3. Ensure Flutter is added to your system `PATH`. Run `flutter doctor` in your terminal to verify.
+The application includes an automatic **Demo Mode**: it runs with in-memory storage right out of the box so you can test immediately without any errors.
 
-### Running Steps
+To connect live real-time sync across your phone and laptop:
 
-1. **Open Terminal / Command Prompt** in the project directory:
-   ```bash
-   cd c:\Users\user\Documents\GitHub\to_do_list_app
+### 1. Create a Firebase Project
+1. Go to [console.firebase.google.com](https://console.firebase.google.com/) and click **Add project**.
+2. Name your project (e.g., `personal-daily-planner`).
+
+### 2. Enable Authentication
+1. Go to **Build** > **Authentication** > **Get Started**.
+2. In the **Sign-in method** tab, enable:
+   - **Email/Password**
+   - **Anonymous** (for Guest mode)
+
+### 3. Enable Cloud Firestore
+1. Go to **Build** > **Firestore Database** > **Create database**.
+2. Choose **Start in production mode**.
+3. Under the **Rules** tab, paste the following security rules so users can only access their own private tasks:
+   ```javascript
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /users/{userId}/tasks/{taskId} {
+         allow read, write: if request.auth != null && request.auth.uid == userId;
+       }
+     }
+   }
    ```
+4. Click **Publish**.
 
-2. **Fetch Dependencies**:
-   ```bash
-   flutter pub get
-   ```
-
-3. **Run on Connected Device or Emulator**:
-   ```bash
-   flutter run
-   ```
-
-4. **Run on Chrome (Web)**:
-   ```bash
-   flutter run -d chrome
-   ```
-
-5. **Run Tests**:
-   ```bash
-   flutter test
-   ```
+### 4. Register Web App & Add Keys
+1. In the Firebase Project Overview, click the **Web icon (`</>`)** to register a web app.
+2. Copy the `firebaseConfig` keys into [lib/firebase_options.dart](file:///c:/Users/user/Documents/GitHub/to_do_list_app/lib/firebase_options.dart).
 
 ---
 
-## 💡 Running in VS Code or Android Studio
+## 💡 Running Locally (When Flutter SDK is Installed)
 
-1. **VS Code**:
-   - Open the folder in VS Code (`File` > `Open Folder...`).
-   - Install the **Flutter** extension.
-   - Press `F5` or click `Run` > `Start Debugging`.
+```powershell
+# 1. Fetch dependencies
+flutter pub get
 
-2. **Android Studio**:
-   - Select `Open an Existing Project` and choose this folder.
-   - Select your target device / emulator in the toolbar.
-   - Click the green **Run ▶** button.
+# 2. Run widget tests
+flutter test
+
+# 3. Launch on Chrome (Web)
+flutter run -d chrome
+
+# 4. Launch on Android Emulator or Device
+flutter run
+```
 
 ---
 
 ## 📄 License
-This project is submitted for educational purposes as part of the **InternCircle Flutter Internship Program (Project 03)**.
+This project is open-source under the MIT License and submitted as part of **InternCircle Project 03**.

@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:todo_list_app/main.dart';
+import 'package:todo_list_app/screens/auth_screen.dart';
+import 'package:todo_list_app/screens/todo_home_screen.dart';
 
 void main() {
-  testWidgets('To-Do List App smoke and functionality test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const TodoListApp());
+  testWidgets('AuthScreen render smoke test', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
+    expect(find.text('Personal Daily Planner'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Sign In'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Continue as Guest'), findsOneWidget);
+  });
 
-    // Verify app title is displayed
-    expect(find.text('My Tasks'), findsOneWidget);
+  testWidgets('TodoHomeScreen planner smoke & functionality test', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: TodoHomeScreen()));
+    await tester.pumpAndSettle();
 
-    // Verify initial sample tasks are present
-    expect(find.text('Welcome to your To-Do App! 👋'), findsOneWidget);
-    expect(find.text('Tap the checkbox to mark as complete'), findsOneWidget);
+    // Verify header and initial sample tasks are present
+    expect(find.text('Today\'s Tasks (3)'), findsOneWidget);
+    expect(find.text('Plan today\'s priority goals 🎯'), findsOneWidget);
 
     // Test adding an empty task (Validation check)
     final addButtonFinder = find.widgetWithText(FilledButton, 'Add');
@@ -31,12 +36,12 @@ void main() {
     final textFieldFinder = find.byType(TextField);
     expect(textFieldFinder, findsOneWidget);
 
-    await tester.enterText(textFieldFinder, 'Complete Flutter Project');
+    await tester.enterText(textFieldFinder, 'Complete Flutter Web Deployment');
     await tester.tap(addButtonFinder);
     await tester.pumpAndSettle();
 
     // Verify the new task is added to the list
-    expect(find.text('Complete Flutter Project'), findsOneWidget);
+    expect(find.text('Complete Flutter Web Deployment'), findsOneWidget);
 
     // Test toggling completion via Checkbox
     final firstCheckboxFinder = find.byType(Checkbox).first;
