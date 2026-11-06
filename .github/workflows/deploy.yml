@@ -35,7 +35,19 @@ jobs:
         run: flutter test
 
       - name: 🚀 Build Flutter Web Release
-        run: flutter build web --release --base-href "/to_do_list_app/"
+        env:
+          FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+        run: |
+          if [ -n "$FIREBASE_WEB_API_KEY" ]; then
+            echo "Building with injected FIREBASE_WEB_API_KEY secret..."
+            flutter build web --release --base-href "/to_do_list_app/" --dart-define=FIREBASE_WEB_API_KEY="$FIREBASE_WEB_API_KEY"
+          else
+            echo "Building with DefaultFirebaseOptions configuration..."
+            flutter build web --release --base-href "/to_do_list_app/"
+          fi
+
+      - name: 📄 Ensure .nojekyll exists for GitHub Pages
+        run: touch build/web/.nojekyll
 
       - name: 🌐 Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4

@@ -86,45 +86,55 @@ class TaskTile extends StatelessWidget {
             ),
           ],
         ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 4.0),
-          // Checkbox to mark complete / incomplete (Requirement 5)
-          leading: Transform.scale(
-            scale: 1.1,
-            child: Checkbox(
-              value: isCompleted,
-              activeColor: theme.colorScheme.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(5.0),
+        // Material widget is required here because the parent AnimatedContainer
+        // paints its own background colour via BoxDecoration. Without a Material
+        // ancestor between that decoration and the ListTile, Flutter cannot render
+        // ink ripples or the tapped-state highlight — causing the
+        // "ListTile background color or ink splashes may be invisible" assertion.
+        // Using Colors.transparent preserves the rounded card background below.
+        child: Material(
+          type: MaterialType.transparency,
+          borderRadius: BorderRadius.circular(16.0),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 4.0),
+            // Checkbox to mark complete / incomplete (Requirement 5)
+            leading: Transform.scale(
+              scale: 1.1,
+              child: Checkbox(
+                value: isCompleted,
+                activeColor: theme.colorScheme.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5.0),
+                ),
+                onChanged: (_) => onToggle(),
               ),
-              onChanged: (_) => onToggle(),
             ),
-          ),
-          // Task Title with Strikethrough effect (Requirement 6)
-          title: Text(
-            task.title,
-            style: TextStyle(
-              fontSize: 16.0,
-              fontWeight: isCompleted ? FontWeight.normal : FontWeight.w500,
-              color: isCompleted ? Colors.grey.shade500 : Colors.grey.shade900,
-              decoration: isCompleted
-                  ? TextDecoration.lineThrough
-                  : TextDecoration.none,
-              decorationColor: Colors.grey.shade500,
-              decorationThickness: 2.0,
+            // Task Title with Strikethrough effect (Requirement 6)
+            title: Text(
+              task.title,
+              style: TextStyle(
+                fontSize: 16.0,
+                fontWeight: isCompleted ? FontWeight.normal : FontWeight.w500,
+                color: isCompleted ? Colors.grey.shade500 : Colors.grey.shade900,
+                decoration: isCompleted
+                    ? TextDecoration.lineThrough
+                    : TextDecoration.none,
+                decorationColor: Colors.grey.shade500,
+                decorationThickness: 2.0,
+              ),
             ),
-          ),
-          // Quick delete tap option
-          trailing: IconButton(
-            icon: Icon(
-              Icons.delete_outline_rounded,
-              color: Colors.grey.shade400,
-              size: 22,
+            // Quick delete tap option
+            trailing: IconButton(
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.grey.shade400,
+                size: 22,
+              ),
+              tooltip: 'Delete task',
+              onPressed: onDeleteTap,
             ),
-            tooltip: 'Delete task',
-            onPressed: onDeleteTap,
+            onTap: onToggle,
           ),
-          onTap: onToggle,
         ),
       ),
     );

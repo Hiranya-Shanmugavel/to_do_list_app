@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../firebase_options.dart';
 import '../models/task.dart';
@@ -12,7 +13,16 @@ class TaskService {
   static final TaskService _instance = TaskService._internal();
   factory TaskService() => _instance;
 
-  final FirebaseFirestore? _firestore;
+  FirebaseFirestore? get _firestore {
+    if (DefaultFirebaseOptions.isConfigured && Firebase.apps.isNotEmpty) {
+      try {
+        return FirebaseFirestore.instance;
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
 
   // In-memory fallback list for testing or unconfigured demo mode
   final List<Task> _mockTasks = [
@@ -34,10 +44,7 @@ class TaskService {
   ];
   late final StreamController<List<Task>> _mockTasksController;
 
-  TaskService._internal()
-      : _firestore = DefaultFirebaseOptions.isConfigured
-            ? FirebaseFirestore.instance
-            : null {
+  TaskService._internal() {
     _mockTasksController = StreamController<List<Task>>.broadcast(
       onListen: () {
         _mockTasksController.add(List.unmodifiable(_mockTasks));
@@ -46,14 +53,17 @@ class TaskService {
   }
 
   /// Reference to the user-scoped Firestore subcollection: /users/{userId}/tasks
-  CollectionReference<Map<String, dynamic>> _userTasksRef(String userId) {
-    return _firestore!.collection('users').doc(userId).collection('tasks');
+  CollectionReference<Map<String, dynamic>>? _userTasksRef(String userId) {
+    final firestore = _firestore;
+    if (firestore == null) return null;
+    return firestore.collection('users').doc(userId).collection('tasks');
   }
 
   /// Real-time stream of tasks for the logged in user
   Stream<List<Task>> getTasksStream(String userId) {
-    if (_firestore != null && userId.isNotEmpty) {
-      return _userTasksRef(userId)
+    final tasksRef = _userTasksRef(userId);
+    if (tasksRef != null && userId.isNotEmpty) {
+      return tasksRef
           .orderBy('createdAt', descending: true)
           .snapshots()
           .map((snapshot) {
@@ -68,8 +78,9 @@ class TaskService {
 
   /// Adds a new task to Firestore
   Future<void> addTask(String userId, Task task) async {
-    if (_firestore != null && userId.isNotEmpty) {
-      await _userTasksRef(userId).doc(task.id).set(task.toMap());
+    final tasksRef = _userTasksRef(userId);
+    if (tasksRef != null && userId.isNotEmpty) {
+      await tasksRef.doc(task.id).set(task.toMap());
       return;
     }
 
@@ -79,8 +90,9 @@ class TaskService {
 
   /// Updates task completion status
   Future<void> toggleTask(String userId, Task task) async {
-    if (_firestore != null && userId.isNotEmpty) {
-      await _userTasksRef(userId).doc(task.id).update({
+    final tasksRef = _userTasksRef(userId);
+    if (tasksRef != null && userId.isNotEmpty) {
+      await tasksRef.doc(task.id).update({
         'isCompleted': !task.isCompleted,
       });
       return;
@@ -95,8 +107,9 @@ class TaskService {
 
   /// Deletes a task from Firestore
   Future<void> deleteTask(String userId, String taskId) async {
-    if (_firestore != null && userId.isNotEmpty) {
-      await _userTasksRef(userId).doc(taskId).delete();
+    final tasksRef = _userTasksRef(userId);
+    if (tasksRef != null && userId.isNotEmpty) {
+      await tasksRef.doc(taskId).delete();
       return;
     }
 
@@ -106,8 +119,9 @@ class TaskService {
 
   /// Restores a deleted task (Undo functionality)
   Future<void> restoreTask(String userId, Task task, int? index) async {
-    if (_firestore != null && userId.isNotEmpty) {
-      await _userTasksRef(userId).doc(task.id).set(task.toMap());
+    final tasksRef = _userTasksRef(userId);
+    if (tasksRef != null && userId.isNotEmpty) {
+      await tasksRef.doc(task.id).set(task.toMap());
       return;
     }
 

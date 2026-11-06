@@ -77,26 +77,32 @@ Because Flutter SDK is not installed on your local machine, a **GitHub Actions C
 
 ---
 
-## 🔑 Firebase Setup Guide (Connecting Live Cloud Sync)
+## 🔑 Firebase Setup Guide (Project: `my-to-do-planner-6b25f`)
 
 The application includes an automatic **Demo Mode**: it runs with in-memory storage right out of the box so you can test immediately without any errors.
 
 To connect live real-time sync across your phone and laptop:
 
-### 1. Create a Firebase Project
-1. Go to [console.firebase.google.com](https://console.firebase.google.com/) and click **Add project**.
-2. Name your project (e.g., `personal-daily-planner`).
+### 1. Firebase Project Details
+- **Project ID**: `my-to-do-planner-6b25f`
+- **Auth Domain**: `my-to-do-planner-6b25f.firebaseapp.com`
+- **Storage Bucket**: `my-to-do-planner-6b25f.firebasestorage.app`
+- **Messaging Sender ID**: `1074926288484`
+- **Web App ID**: `1:1074926288484:web:58d747aa2be80e71b6e971`
 
-### 2. Enable Authentication
-1. Go to **Build** > **Authentication** > **Get Started**.
-2. In the **Sign-in method** tab, enable:
+### 2. Enable Authentication Providers (Firebase Console)
+1. Go to [Firebase Console](https://console.firebase.google.com/) > Select **`my-to-do-planner-6b25f`**.
+2. Navigate to **Build** > **Authentication** > **Sign-in method**.
+3. Enable both:
    - **Email/Password**
-   - **Anonymous** (for Guest mode)
+   - **Anonymous** (required for the "Continue as Guest" feature)
+4. Under the **Settings** tab > **Authorized domains**, add your GitHub Pages domain:
+   - `Hiranya-Shanmugavel.github.io`
 
-### 3. Enable Cloud Firestore
-1. Go to **Build** > **Firestore Database** > **Create database**.
-2. Choose **Start in production mode**.
-3. Under the **Rules** tab, paste the following security rules so users can only access their own private tasks:
+### 3. Create Cloud Firestore Database (Firebase Console)
+1. Navigate to **Build** > **Firestore Database** > **Create database**.
+2. Choose a location (e.g. `nam5 (us-central)` or closest to your users) and select **Start in production mode**.
+3. In the **Rules** tab, paste the following user-scoped security rules:
    ```javascript
    rules_version = '2';
    service cloud.firestore {
@@ -109,9 +115,15 @@ To connect live real-time sync across your phone and laptop:
    ```
 4. Click **Publish**.
 
-### 4. Register Web App & Add Keys
-1. In the Firebase Project Overview, click the **Web icon (`</>`)** to register a web app.
-2. Copy the `firebaseConfig` keys into [lib/firebase_options.dart](file:///c:/Users/user/Documents/GitHub/to_do_list_app/lib/firebase_options.dart).
+### 4. Provide your Firebase Web API Key
+You can supply your Web API Key (`AIzaSy...`) in either of two ways:
+- **Direct in code**: Paste it into `defaultValue` in [lib/firebase_options.dart](file:///c:/Users/user/Documents/GitHub/to_do_list_app/lib/firebase_options.dart).
+- **Via GitHub Secret (Recommended)**:
+  1. Go to your repo on GitHub: **Settings** > **Secrets and variables** > **Actions**.
+  2. Click **New repository secret**.
+  3. Name: `FIREBASE_WEB_API_KEY`.
+  4. Value: Paste your `AIzaSy...` key from your Firebase Web registration screen.
+  5. The GitHub Actions workflow automatically injects it during `flutter build web`.
 
 ---
 

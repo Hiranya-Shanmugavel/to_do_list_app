@@ -4,22 +4,33 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
-/// Generated template for cross-platform Firebase integration.
-/// Replace placeholder values with your Firebase Project Configuration from:
-/// https://console.firebase.google.com/
+/// Pre-configured for project: my-to-do-planner-6b25f
+/// Web App ID: 1:1074926288484:web:58d747aa2be80e71b6e971
 class DefaultFirebaseOptions {
+  /// Web API Key:
+  /// Paste your API key from the Firebase Console Web App registration screen
+  /// into the defaultValue below (starts with 'AIzaSy...'), or supply it at
+  /// build time via `--dart-define=FIREBASE_WEB_API_KEY=your_key`.
+  static const String _webApiKey = String.fromEnvironment(
+    'FIREBASE_WEB_API_KEY',
+    defaultValue: 'AIzaSy_YOUR_WEB_API_KEY_HERE',
+  );
+
   /// Returns true if valid Firebase configuration credentials have been entered.
   static bool get isConfigured {
     if (kIsWeb) {
       return web.apiKey != 'AIzaSy_YOUR_WEB_API_KEY_HERE' &&
-          web.apiKey.isNotEmpty;
+          web.apiKey != '[Use the API key from my Firebase registration screen]' &&
+          !web.apiKey.startsWith('AIzaSy_YOUR') &&
+          !web.apiKey.startsWith('[Use') &&
+          web.apiKey.trim().isNotEmpty;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android.apiKey != 'AIzaSy_YOUR_ANDROID_API_KEY_HERE' &&
-            android.apiKey.isNotEmpty;
+            android.apiKey.trim().isNotEmpty;
       default:
-        return web.apiKey != 'AIzaSy_YOUR_WEB_API_KEY_HERE';
+        return web.apiKey.isNotEmpty;
     }
   }
 
@@ -37,32 +48,32 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // Web Firebase Configuration
+  // Web Firebase Configuration (Registered for my-to-do-planner-6b25f)
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSy_YOUR_WEB_API_KEY_HERE',
-    appId: '1:1234567890:web:abcdef123456',
-    messagingSenderId: '1234567890',
-    projectId: 'your-todo-planner-project',
-    authDomain: 'your-todo-planner-project.firebaseapp.com',
-    storageBucket: 'your-todo-planner-project.appspot.com',
+    apiKey: _webApiKey,
+    appId: '1:1074926288484:web:58d747aa2be80e71b6e971',
+    messagingSenderId: '1074926288484',
+    projectId: 'my-to-do-planner-6b25f',
+    authDomain: 'my-to-do-planner-6b25f.firebaseapp.com',
+    storageBucket: 'my-to-do-planner-6b25f.firebasestorage.app',
   );
 
   // Android Firebase Configuration
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSy_YOUR_ANDROID_API_KEY_HERE',
-    appId: '1:1234567890:android:abcdef123456',
-    messagingSenderId: '1234567890',
-    projectId: 'your-todo-planner-project',
-    storageBucket: 'your-todo-planner-project.appspot.com',
+    appId: '1:1074926288484:android:placeholder',
+    messagingSenderId: '1074926288484',
+    projectId: 'my-to-do-planner-6b25f',
+    storageBucket: 'my-to-do-planner-6b25f.firebasestorage.app',
   );
 
   // iOS Firebase Configuration
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSy_YOUR_IOS_API_KEY_HERE',
-    appId: '1:1234567890:ios:abcdef123456',
-    messagingSenderId: '1234567890',
-    projectId: 'your-todo-planner-project',
-    storageBucket: 'your-todo-planner-project.appspot.com',
+    appId: '1:1074926288484:ios:placeholder',
+    messagingSenderId: '1074926288484',
+    projectId: 'my-to-do-planner-6b25f',
+    storageBucket: 'my-to-do-planner-6b25f.firebasestorage.app',
     iosBundleId: 'com.interncircle.todoListApp',
   );
 }
